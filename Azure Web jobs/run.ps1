@@ -53,11 +53,8 @@ catch{
     #write-Error -MessageData 'Could not delete all files from file folder.
 }
 
-#$User = "Suman.kumar01@libertymutual.com"
-#$PlainPassword = 'Sum@1234Kum@1234'
-
-$User = "sagrspgrs-hrsync-admin@LibertyMutual.onmicrosoft.com"
-$PlainPassword = 'T#xm4#rK'
+$User = "username"
+$PlainPassword = 'Pwd'
 
 $SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force
 $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $SecurePassword
@@ -66,7 +63,7 @@ $cred = New-Object -TypeName System.Management.Automation.PSCredential -Argument
  #$dataJson = $logFile + $timeRun + ".json"
 
 
-
+#path for local directory where .ps1 file and Module folder will be there containing all dependency and you need to create Zip file(.ps1 and Modules folder both) to upload for Azure web job
  Import-Module .\Modules\AzureAD
  Import-Module .\Modules\PnP.PowerShell
      Connect-AzureAD -Credential $cred
