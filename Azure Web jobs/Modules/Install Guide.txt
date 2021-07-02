@@ -1,0 +1,8 @@
+You need to install Pnp.Powershell and Azure-Ad.
+
+1. Naviagete upto Modules folder(this directory) in you local PowerShell and install both PnP and Azure inside current folder.
+
+Install-Module -Name "PnP.PowerShell"
+Install-Module AzureAD
+
+Note: PnP.Powershell and SharePointPnPOnline both can use connect-pnponline but are different modules.
