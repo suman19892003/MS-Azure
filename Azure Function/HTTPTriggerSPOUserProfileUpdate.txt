@@ -1,0 +1,75 @@
+<#  
+.SYNOPSIS  
+    This script is called form MS Flow to update specific SPO Property. 
+.DESCRIPTION  
+    This Function requires files in JSON format along with File Name. 
+    The JSON file contains all information of user for which updation will take place.
+.NOTES  
+    Author: Suman kumar - suman.kumar01@libertymutual.com 
+#> 
+
+using namespace System.Net
+
+# Input parameters for accessing this HTTP Function.
+param($Request, $TriggerMetadata)
+
+# Parsing the Request Query
+$json = $Request.Query.Data
+if (-not $json) {
+    $json = $Request.Body.Data
+    $name = $Request.Body.FileName
+}
+if ($json) {
+    $body = "User Profile Job -$name Executed Succesfully"
+
+try {
+    
+#Get Credential from application settings
+$User = $env:tenant_user
+$PlainPassword = $env:tenant_pwd
+$SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force
+$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $SecurePassword
+
+#Mapping of the Column from Request Body to update SPO field
+ $propertyMap =@{
+ "Department"="Department"
+ "LMOfficeNumber"= "LMOfficeNumber"
+ "DeptID"= "DeptID"
+ "WorkPhone"= "WorkPhone"
+ "CellPhone" = "CellPhone"
+ "Mailstop" = "Mailstop"
+ "Company"= "company"
+ "Division" = "division"
+ "LM-MarketName"= "LM-MarketName"
+ "LM-MarketCode"= "LM-MarketCode"
+ "LM-SBUCode" = "LM-SBUCode"
+ "LMJobCode"= "LMJobCode"
+ "LMJobFamily"= "LMJobFamily"
+ "LMJobFunction"= "LMJobFunction"
+ "LMSegmentCode" = "LMSegmentCode"
+ "enterprisePIN" = "enterprisePIN"
+ 
+ }
+
+ #Reference through Azure local Powershell location
+ $filePath = 'c:\home\BulkData\' + $name
+
+ #Coonect to SharePoint Online
+ Connect-PnPOnline -Url https://libertymutual.sharepoint.com/sites/HRSync -Credential $cred  
+ write-Information -MessageData 'SharePoint Online connected successfully.' 
+
+ #Trigger Bulk Update data to update SPO Property
+ $json |ConvertTo-Json | out-file $filePath
+ New-PnPUPABulkImportJob -Folder "UserProfileJob" -Path $filePath -IdProperty "IdName" -UserProfilePropertyMapping $propertyMap
+ write-Information -MessageData 'PNP Bulk update trigerred successfully.' 
+}
+}
+catch{
+    write-Error -Message 'Issue in execting RunUserProfileJob.'
+    exit
+}
+# Associate values to output bindings by calling 'Push-OutputBinding'.
+Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+    StatusCode = [HttpStatusCode]::OK
+    Body = $body
+})

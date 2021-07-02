@@ -1,0 +1,112 @@
+<#  
+.SYNOPSIS  
+    This is timer function which perform the task to create JSOn file from Azure AD. 
+.DESCRIPTION  
+    This function will create a JSON file as getSpolBulkProfileLoadDataProd.json and upload to SharePoint HR Sync Site.
+    getSpolBulkProfileLoadDataProd.json file contains information from all users from Azure Active Directory thta we will update later with SharePoint Online user profile.
+.NOTES  
+    Author: Suman Kumar
+#>
+
+# Input bindings are passed in via param block.
+param($Timer)
+
+# Get the current universal time in the default string format.
+$currentUTCtime = (Get-Date).ToUniversalTime()
+
+# The 'IsPastDue' property is 'true' when the current function invocation is later than scheduled.
+if ($Timer.IsPastDue) {
+    Write-Host "PowerShell timer is running late!"
+}
+
+# Write an information log with the current time.
+Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"
+
+
+try{
+
+$Script={
+    param ()
+
+$jsonFileDir = "C:\home\JsonData\";
+#Note: In Azure we need to store file in local Azure folder of the Function App, we created.
+#We can click on Fuction App we created and click on Advanced Tools under Development tools.
+#It will open as https://hrsync-sx-fn-hrsync-b0.scm.azurewebsites.net/, click CMS/Powershell and you can create your own folder
+
+$OUs = "OU=Central,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=Mid-Atlantic,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=Mid-West,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=New-England,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=Pacific,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=Southern,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=Southwest,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=BlancIR011E,OU=Europe,OU=LM Users,DC=lm,DC=lmig,DC=com", `
+"OU=BelfaUK022D,OU=Europe,OU=LM Users,DC=lm,DC=lmig,DC=com";
+
+
+$logFile = "getSpolBulkProfileLoadDataProd";
+
+
+$timeRun = get-date -Format hhmmss;
+$log = $fileDir + $logFile + $timeRun + ".log";
+
+#error handling
+function errorLog($service, $message)
+{
+    "error " + $service + " " + $message >> $log;	
+}
+
+try{
+    #clear all working files
+    Remove-Item $jsonFileDir* -Recurse
+}
+catch{
+    write-Error -MessageData 'Could not delete all files from file folder.'
+}
+
+#$User = $env:tenant_user
+#$PlainPassword = $env:tenant_pwd
+$SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force
+$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $SecurePassword
+ $dataJson = $logFile + $timeRun + ".json"
+
+     Connect-AzureAD -Credential $cred
+      
+        $users = Get-AzureADUser -ObjectId Suman.kumar01@libertymutual.com |
+        #$users = Get-AzureADUser -All $true |
+        #$users = Get-AzureADUser -Top 30000 |
+
+        Select-Object @{N='IdName';E={if($_.UserPrincipalName){$_.UserPrincipalName}else{""}}},
+        @{N='LMOfficeNumber';E={ if ($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_extensionAttribute1"]) { $_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_extensionAttribute1"] } else { "" }}},
+        @{N='DeptID';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_extensionAttribute2"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_extensionAttribute2"]}else {""}}},
+         @{N='WorkPhone';E={if($_.TelephoneNumber){$_.TelephoneNumber}else{""}}},
+         @{N='CellPhone';E={if($_.Mobile){$_.Mobile}else{""}}},
+         @{N='Mailstop';E={if($_.info){$_.info}else{""}}},
+         @{N='Company';E={if($_.CompanyName){$_.CompanyName}else{""}}},
+        @{N='Division';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_division"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_division"]}else{""}}},
+        @{N='LM-MarketName';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_MarketName"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_MarketName"]}else{""}}},
+        @{N='LM-MarketCode';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_MarketCode"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_MarketCode"]}else{""}}},
+        @{N='LM-SBUCode';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_SBUCode"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LM_SBUCode"]}else{""}}},
+        @{N='LMJobCode';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmJobCode"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmJobCode"]}else{""}}},
+        @{N='LMJobFamily';E={if($_.LMJobFamily){$_.LMJobFamily}else{""}}},
+        @{N='LMJobFunction';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmJobFunction"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmJobFunction"]}else{""}}},
+        @{N='LMSegmentCode';E={if($_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmSegmentCode"]){$_.ExtensionProperty["extension_128b6233d06d4df391d7de26c982b64e_LmSegmentCode"]}else{""}}},
+        @{N='enterprisePIN';E={if($_.ExtensionProperty["employeeId"]){$_.ExtensionProperty["employeeId"]}else{""}}} 
+
+        $json = $users 
+        $json = ConvertTo-Json @($json)  -Compress
+        $json ='{ "value":'+ $json + '}'
+
+        $Stream = [IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes($json))
+
+        Connect-PnPOnline -Url https://libertymutual.sharepoint.com/sites/HRSync -Credential $cred  
+        $splib = "UserProfileData"  
+        Add-PnPFile  -Folder $splib -Stream $Stream -FileName $dataJson       
+    }
+ 
+&$env:64bitPowerShellPath -WindowStyle Hidden -NonInteractive -Command $Script
+}
+catch{
+    write-Error -Message 'Issue in generating JSON file. Exiting the process now.'
+    exit
+} 
