@@ -5,7 +5,7 @@
     This Function requires files in JSON format along with File Name. 
     The JSON file contains all information of user for which updation will take place.
 .NOTES  
-    Author: Suman kumar - suman.kumar01@libertymutual.com 
+    Author: Suman kumar 
 #> 
 
 using namespace System.Net
